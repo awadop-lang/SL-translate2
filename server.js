@@ -20,8 +20,7 @@ app.post('/translate', async (req, res) => {
         path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': data.length
+            'Content-Type': 'application/json'
         }
     };
 
@@ -31,13 +30,20 @@ app.post('/translate', async (req, res) => {
         response.on('end', () => {
             try {
                 const json = JSON.parse(str);
-                if (json.candidates && json.candidates[0].content.parts[0].text) {
+                
+                // Si Google renvoie une erreur officielle
+                if (json.error) {
+                    return res.status(500).json({ text: "GOOGLE DIT: " + json.error.message });
+                }
+
+                // Si tout va bien
+                if (json.candidates && json.candidates[0].content) {
                     res.json({ text: json.candidates[0].content.parts[0].text });
                 } else {
-                    res.status(500).json({ text: "Erreur format Google" });
+                    res.status(500).json({ text: "Réponse vide (Filtre de sécurité ?)" });
                 }
             } catch (e) {
-                res.status(500).json({ text: "Erreur JSON" });
+                res.status(500).json({ text: "Erreur lecture JSON" });
             }
         });
     });
@@ -52,5 +58,5 @@ app.post('/translate', async (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log("Serveur 1.5 Flash prêt sur port " + PORT);
+    console.log("Serveur Diagnostic Final prêt.");
 });
