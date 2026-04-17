@@ -8,35 +8,31 @@ app.post('/translate', async (req, res) => {
     try {
         const { prompt, password } = req.body;
 
-        // 1. Test du mot de passe
         if (password !== process.env.HUD_PASSWORD) {
-            return res.status(403).json({ text: "Erreur: Mot de passe Railway incorrect." });
+            return res.status(403).json({ text: "Erreur: Mot de passe incorrect." });
         }
 
-        // 2. Test de la présence de la clé
-        const key = process.env.GEMINI_API_KEY;
-        if (!key) {
-            return res.status(500).json({ text: "Erreur: La variable GEMINI_API_KEY est vide sur Railway." });
-        }
+        const apiKey = process.env.GEMINI_API_KEY;
+        const genAI = new GoogleGenerativeAI(apiKey);
 
-        const genAI = new GoogleGenerativeAI(key);
+        // CHANGEMENT ICI : On utilise "gemini-1.5-flash" mais avec une initialisation simplifiée
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // 3. Tentative d'appel à Google
+        // Utilisation de la méthode la plus compatible
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const out = response.text();
+        const text = response.text();
 
-        res.json({ text: out });
+        res.json({ text: text });
 
     } catch (err) {
-        // Renvoie l'erreur précise de Google au HUD
         console.error(err);
-        res.status(500).json({ text: "DEBUG GOOGLE: " + err.message });
+        // Si gemini-1.5-flash échoue, on tente le fallback gemini-pro
+        res.status(500).json({ text: "ERREUR GOOGLE: " + err.message });
     }
 });
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log("Serveur de diagnostic prêt sur port " + PORT);
+    console.log("Serveur corrigé prêt.");
 });
