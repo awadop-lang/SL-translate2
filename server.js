@@ -1,5 +1,5 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require(""@google/generative-ai": "^0.1.0"");
 
 const app = express();
 app.use(express.json());
