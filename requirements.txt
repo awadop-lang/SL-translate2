@@ -1,0 +1,12 @@
+fastapi
+httpx
+uvicorn
+groq
+python-dotenv
+
+# Note: torch, transformers, huggingface_hub are commented out
+# because NLLB model is disabled to save resources
+# Uncomment these only if you want to enable local NLLB translation
+# transformers[sentencepiece]
+# torch
+# huggingface_hub

@@ -1,0 +1,32 @@
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# API Keys & Secrets (NEVER commit these!)
+*.key
+*.secret
+secrets/
+
+# Cache & Build
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Memory file
+memory.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

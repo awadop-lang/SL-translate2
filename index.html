@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mémoire Conversations - Traducteur SL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e4e4e7;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #818cf8;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #818cf8;
+        }
+        .stat-label {
+            color: #a1a1aa;
+            margin-top: 5px;
+        }
+        .memory-list {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .uuid-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .uuid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .uuid-title {
+            font-size: 1.1rem;
+            color: #818cf8;
+            font-weight: 600;
+        }
+        .uuid-code {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #a1a1aa;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover {
+            background: #dc2626;
+        }
+        .conversation-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            border-left: 3px solid #818cf8;
+            font-size: 0.95rem;
+        }
+        .conversation-item .direction {
+            color: #818cf8;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .conversation-item .content {
+            color: #e4e4e7;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a1a1aa;
+        }
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .refresh-btn {
+            background: #818cf8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #6366f1;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Mémoire Conversations</h1>
+        
+        <div class="controls">
+            <button class="refresh-btn" onclick="loadMemory()">🔄 Rafraîchir</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-uuids">0</div>
+                <div class="stat-label">UUIDs actifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-entries">0</div>
+                <div class="stat-label">Total entrées</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-entries">0</div>
+                <div class="stat-label">Moyenne par UUID</div>
+            </div>
+        </div>
+
+        <div class="memory-list" id="memory-container">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <p>Chargement de la mémoire...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadMemory() {
+            try {
+                const response = await fetch('/api/memory');
+                const data = await response.json();
+                displayMemory(data);
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('memory-container').innerHTML = `
+                    <div class="empty-state">
+                        <p>Erreur de chargement: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayMemory(data) {
+            const container = document.getElementById('memory-container');
+            const uuids = Object.keys(data);
+            
+            // Update stats
+            document.getElementById('total-uuids').textContent = uuids.length;
+            const totalEntries = uuids.reduce((sum, uuid) => sum + data[uuid].length, 0);
+            document.getElementById('total-entries').textContent = totalEntries;
+            document.getElementById('avg-entries').textContent = uuids.length ? 
+                (totalEntries / uuids.length).toFixed(1) : 0;
+
+            if (uuids.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <p>Aucune conversation en mémoire</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = uuids.map(uuid => `
+                <div class="uuid-section">
+                    <div class="uuid-header">
+                        <div>
+                            <div class="uuid-title">Conversation</div>
+                            <div class="uuid-code">${uuid}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteUUID('${uuid}')">🗑️ Supprimer</button>
+                    </div>
+                    ${data[uuid].map(item => `
+                        <div class="conversation-item">
+                            <div class="direction">${item}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        async function deleteUUID(uuid) {
+            if (!confirm(`Supprimer toute la mémoire pour ${uuid} ?`)) return;
+            
+            try {
+                const response = await fetch(`/api/memory/${uuid}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadMemory();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        // Load on page load
+        loadMemory();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadMemory, 30000);
+    </script>
+</body>
+</html>
