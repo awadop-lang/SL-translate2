@@ -101,6 +101,10 @@ def build_translation_prompt(source, target, history=None):
 # APPEL GROQ GÉNÉRIQUE
 # ──────────────────────────────────────────────
 async def call_groq(model, system_msg, text, timeout=10.0):
+    if not GROQ_KEY:
+        print("[Groq] ⚠️ GROQ_API_KEY non définie")
+        return None
+    
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -143,6 +147,10 @@ async def call_groq(model, system_msg, text, timeout=10.0):
 # MOTEURS DE TRADUCTION
 # ──────────────────────────────────────────────
 async def translate_groq_primary(text, source, target, history=None):
+    if not GROQ_KEY:
+        print("[Groq] ⚠️ Clé API manquante, utilisation du fallback")
+        return text
+    
     system_msg = build_translation_prompt(source, target, history)
     print(f"[Groq 8B] {source} → {target} | '{text[:60]}'")
     res = await call_groq("llama-3.1-8b-instant", system_msg, text, timeout=12.0)
@@ -151,6 +159,10 @@ async def translate_groq_primary(text, source, target, history=None):
     return res
 
 async def translate_groq_fallback(text, source, target):
+    if not GROQ_KEY:
+        print("[Groq] ⚠️ Clé API manquante, retour du texte original")
+        return text
+    
     system_msg = build_translation_prompt(source, target)
     print(f"[Groq retry] {source} → {target} | '{text[:60]}'")
     res = await call_groq("llama-3.1-8b-instant", system_msg, text, timeout=10.0)
@@ -315,7 +327,7 @@ async def index():
     if os.path.exists(index_path):
         with open(index_path, encoding="utf-8") as f:
             return HTMLResponse(content=f.read(), status_code=200)
-    return {"status": "✅ Serveur traducteur SL actif"}
+    return {"status": "✅ Serveur traducteur SL actif", "api_keys": {"groq": bool(GROQ_KEY), "deepl": bool(DEEPL_KEY)}}
 
 @app.get("/api/memory")
 async def get_memory():
@@ -334,6 +346,15 @@ async def clear_all_memory():
     MEMORY.clear()
     save_memory()
     return {"status": "cleared"}
+
+@app.get("/api/status")
+async def get_status():
+    return {
+        "status": "running",
+        "groq_configured": bool(GROQ_KEY),
+        "deepl_configured": bool(DEEPL_KEY),
+        "memory_entries": len(MEMORY)
+    }
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
