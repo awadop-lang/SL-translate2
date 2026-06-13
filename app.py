@@ -46,18 +46,26 @@ ALLOWED_USERS = [
     "1981874c-b144-42ea-b94f-2a819cd91a82",
     "4b8ad3ce-ddf3-4ac9-949e-11fe91905b57"
 ]
-DEEPL_LANG_MAP = {
-    "arabic":     "AR", "bulgarian":  "BG", "chinese":    "ZH",
-    "czech":      "CS", "danish":     "DA", "dutch":      "NL",
-    "english":    "EN", "estonian":   "ET", "finnish":    "FI",
-    "french":     "FR", "german":     "DE", "greek":      "EL",
-    "hungarian":  "HU", "indonesian": "ID", "italian":    "IT",
-    "japanese":   "JA", "korean":     "KO", "latvian":    "LV",
-    "lithuanian": "LT", "norwegian":  "NB", "polish":     "PL",
-    "portuguese": "PT", "romanian":   "RO", "russian":    "RU",
-    "slovak":     "SK", "slovenian":  "SL", "spanish":    "ES",
-    "swedish":    "SV", "turkish":    "TR", "ukrainian":  "UK"
+# ── Mapping des langues supportées ──
+SUPPORTED_LANGUAGES = {
+    "arabic": "AR", "bulgarian": "BG", "chinese": "ZH",
+    "czech": "CS", "danish": "DA", "dutch": "NL",
+    "english": "EN", "estonian": "ET", "finnish": "FI",
+    "french": "FR", "german": "DE", "greek": "EL",
+    "hungarian": "HU", "indonesian": "ID", "italian": "IT",
+    "japanese": "JA", "korean": "KO", "latvian": "LV",
+    "lithuanian": "LT", "norwegian": "NB", "polish": "PL",
+    "portuguese": "PT", "romanian": "RO", "russian": "RU",
+    "slovak": "SK", "slovenian": "SL", "spanish": "ES",
+    "swedish": "SV", "turkish": "TR", "ukrainian": "UK",
+    # Langues supplémentaires pour Groq
+    "hindi": "HI", "thai": "TH", "vietnamese": "VI",
+    "hebrew": "HE", "arabic": "AR", "persian": "FA",
+    "auto": "AUTO"  # Détection automatique
 }
+
+# Cartographie pour DeepL (codes spécifiques)
+DEEPL_LANG_MAP = SUPPORTED_LANGUAGES.copy()
 
 # ── Phrases de refus à détecter ──
 REFUS_TRIGGERS = [
@@ -327,7 +335,16 @@ async def index():
     if os.path.exists(index_path):
         with open(index_path, encoding="utf-8") as f:
             return HTMLResponse(content=f.read(), status_code=200)
-    return {"status": "✅ Serveur traducteur SL actif", "api_keys": {"groq": bool(GROQ_KEY), "deepl": bool(DEEPL_KEY)}}
+    return {
+        "status": "✅ Serveur traducteur SL actif",
+        "api_keys": {"groq": bool(GROQ_KEY), "deepl": bool(DEEPL_KEY)},
+        "endpoints": {
+            "languages": "/api/languages",
+            "status": "/api/status",
+            "memory": "/api/memory",
+            "translate": "/sl (POST)"
+        }
+    }
 
 @app.get("/api/memory")
 async def get_memory():
@@ -354,6 +371,15 @@ async def get_status():
         "groq_configured": bool(GROQ_KEY),
         "deepl_configured": bool(DEEPL_KEY),
         "memory_entries": len(MEMORY)
+    }
+
+@app.get("/api/languages")
+async def get_languages():
+    """Retourne la liste des langues supportées par le traducteur"""
+    return {
+        "languages": list(SUPPORTED_LANGUAGES.keys()),
+        "count": len(SUPPORTED_LANGUAGES),
+        "mapping": SUPPORTED_LANGUAGES
     }
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
